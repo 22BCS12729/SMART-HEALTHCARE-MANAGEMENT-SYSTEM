@@ -1,0 +1,185 @@
+@model SmartHealthcare.MVC.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+
+    <!-- 🔵 Welcome Section -->
+    <div class="card shadow-lg border-0 mb-4">
+        <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-1">
+                    👋 Welcome, @Model.UserName
+                </h3>
+                <span class="badge bg-info px-3 py-2">@Model.UserRole</span>
+            </div>
+            <i class="bi bi-heart-pulse-fill text-primary" style="font-size:40px;"></i>
+        </div>
+    </div>
+
+    <!-- ✅ Alerts -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- 📊 ADMIN DASHBOARD -->
+    @if (Model.UserRole == "Admin" && Model.Stats != null)
+    {
+        <div class="row g-3 mb-4">
+
+            <div class="col-md-3">
+                <div class="card shadow border-0 bg-primary text-white text-center p-3">
+                    <h3>@Model.Stats.TotalPatients</h3>
+                    <p class="mb-0">👨‍⚕️ Patients</p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card shadow border-0 bg-success text-white text-center p-3">
+                    <h3>@Model.Stats.TotalDoctors</h3>
+                    <p class="mb-0">🩺 Doctors</p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card shadow border-0 bg-info text-white text-center p-3">
+                    <h3>@Model.Stats.TotalAppointments</h3>
+                    <p class="mb-0">📅 Appointments</p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card shadow border-0 bg-warning text-dark text-center p-3">
+                    <h3>@Model.Stats.TodayAppointments</h3>
+                    <p class="mb-0">⚡ Today</p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row g-3 mb-4 text-center">
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="text-warning">@Model.Stats.PendingAppointments</h5>
+                        <small>Pending</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="text-success">@Model.Stats.ConfirmedAppointments</h5>
+                        <small>Confirmed</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="text-info">@Model.Stats.CompletedAppointments</h5>
+                        <small>Completed</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="text-danger">@Model.Stats.CancelledAppointments</h5>
+                        <small>Cancelled</small>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    }
+
+    <!-- 📅 APPOINTMENTS -->
+    @if (Model.UpcomingAppointments.Any())
+    {
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white fw-semibold">
+                📅 Upcoming Appointments
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>@(Model.UserRole == "Doctor" ? "Patient" : "Doctor")</th>
+                                <th>Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var appointment in Model.UpcomingAppointments.Take(5))
+                            {
+                                <tr>
+                                    <td>@appointment.AppointmentDate.ToString("MMM dd, yyyy")</td>
+                                    <td>@appointment.AppointmentTime.ToString("hh\\:mm")</td>
+                                    <td>
+                                        <strong>
+                                            @(Model.UserRole == "Doctor" ? appointment.PatientName : appointment.DoctorName)
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge px-3 py-2 bg-@(appointment.Status.ToString().ToLower() switch {
+                                            "pending" => "warning",
+                                            "confirmed" => "success",
+                                            "completed" => "info",
+                                            "cancelled" => "danger",
+                                            _ => "secondary"
+                                        })">
+                                            @appointment.Status
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a asp-controller="Appointments" asp-action="Index"
+                                           class="btn btn-outline-primary btn-sm">
+                                            👁 View
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info shadow-sm">
+            <i class="bi bi-info-circle"></i> No upcoming appointments.
+            @if (Model.UserRole == "Patient")
+            {
+                <a asp-controller="Appointments" asp-action="Book" class="alert-link">
+                    Book now
+                </a>
+            }
+        </div>
+    }
+
+</div>

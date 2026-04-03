@@ -1,0 +1,163 @@
+@model SmartHealthcare.MVC.ViewModels.AppointmentBookingViewModel
+@{
+    ViewData["Title"] = "Book Appointment";
+    Layout = "_Layout";
+}
+
+<div class="container">
+    <h2 class="mb-4"><i class="bi bi-calendar-plus"></i> Book an Appointment</h2>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success" role="alert">
+            <i class="bi bi-check-circle"></i> @Model.SuccessMessage
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Select Date, Time & Doctor</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Book" method="post" id="bookingForm">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="DoctorId" class="form-label"></label>
+                            <select asp-for="DoctorId" class="form-select" id="doctorSelect">
+                                <option value="">-- Select Doctor --</option>
+                                @foreach (var doctor in Model.AvailableDoctors)
+                                {
+                                    <option value="@doctor.Id">@doctor.FullName - @string.Join(", ", doctor.SpecializationNames) (@doctor.ExperienceYears years exp)</option>
+                                }
+                            </select>
+                            <span asp-validation-for="DoctorId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="AppointmentDate" class="form-label"></label>
+                            <input asp-for="AppointmentDate" class="form-control" type="date" id="dateSelect"
+                                   min="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="AppointmentDate" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Available Time Slots</label>
+                            <div id="timeSlots" class="d-flex flex-wrap gap-2">
+                                <p class="text-muted">Please select a doctor and date to see available slots</p>
+                            </div>
+                            <input type="hidden" asp-for="AppointmentTime" id="selectedTime" />
+                            <span asp-validation-for="AppointmentTime" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Reason" class="form-label"></label>
+                            <textarea asp-for="Reason" class="form-control" rows="3" placeholder="Describe your symptoms or reason for the appointment..."></textarea>
+                            <span asp-validation-for="Reason" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                                <i class="bi bi-check-circle"></i> Book Appointment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Booking Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check2 text-success"></i> Select a doctor from the list</li>
+                        <li class="mb-2"><i class="bi bi-check2 text-success"></i> Choose a convenient date</li>
+                        <li class="mb-2"><i class="bi bi-check2 text-success"></i> Pick an available time slot</li>
+                        <li class="mb-2"><i class="bi bi-check2 text-success"></i> Describe your symptoms briefly</li>
+                        <li class="mb-2"><i class="bi bi-check2 text-success"></i> Confirm your booking</li>
+                    </ul>
+                    <hr />
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-clock"></i> Each appointment slot is 30 minutes long.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            var selectedSlot = null;
+
+            function loadAvailableSlots() {
+                var doctorId = $('#doctorSelect').val();
+                var date = $('#dateSelect').val();
+
+                if (doctorId && date) {
+                    $('#timeSlots').html('<p class="text-muted"><i class="bi bi-hourglass-split"></i> Loading available slots...</p>');
+
+                    $.ajax({
+                        url: '@Url.Action("GetAvailableSlots")',
+                        type: 'GET',
+                        data: { doctorId: doctorId, date: date },
+                        success: function (data) {
+                            var html = '';
+                            if (data && data.length > 0) {
+                                $.each(data, function (index, slot) {
+                                    if (slot.isAvailable) {
+                                        var timeStr = slot.time.substring(0, 5);
+                                        html += '<button type="button" class="btn btn-outline-primary time-slot" data-time="' + slot.time + '">' + timeStr + '</button>';
+                                    } else {
+                                        var timeStr = slot.time.substring(0, 5);
+                                        html += '<button type="button" class="btn btn-secondary" disabled>' + timeStr + ' (Booked)</button>';
+                                    }
+                                });
+                            } else {
+                                html = '<p class="text-warning"><i class="bi bi-exclamation-circle"></i> No available slots for this date</p>';
+                            }
+                            $('#timeSlots').html(html);
+                            bindSlotSelection();
+                        },
+                        error: function () {
+                            $('#timeSlots').html('<p class="text-danger"><i class="bi bi-exclamation-triangle"></i> Failed to load time slots</p>');
+                        }
+                    });
+                }
+            }
+
+            function bindSlotSelection() {
+                $('.time-slot').on('click', function () {
+                    $('.time-slot').removeClass('btn-primary').addClass('btn-outline-primary');
+                    $(this).removeClass('btn-outline-primary').addClass('btn-primary');
+                    $('#selectedTime').val($(this).data('time'));
+                    $('#submitBtn').prop('disabled', false);
+                });
+            }
+
+            $('#doctorSelect, #dateSelect').on('change', function () {
+                loadAvailableSlots();
+            });
+
+            // Load slots if both values are already set
+            loadAvailableSlots();
+        });
+    </script>
+}

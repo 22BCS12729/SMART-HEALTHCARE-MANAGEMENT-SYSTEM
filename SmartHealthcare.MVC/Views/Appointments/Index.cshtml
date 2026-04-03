@@ -1,0 +1,164 @@
+@model List<SmartHealthcare.Core.DTOs.AppointmentDto>
+@using SmartHealthcare.Core.Enums
+@{
+    ViewData["Title"] = "My Appointments";
+    Layout = "_Layout";
+    var userRole = Context.Session.GetString("UserRole");
+}
+
+<div class="container mt-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark">
+            <i class="bi bi-calendar-check"></i> My Appointments
+        </h2>
+
+        @if (userRole == "Patient")
+        {
+            <a asp-action="Book" class="btn btn-dark">
+                <i class="bi bi-plus-circle"></i> Book Appointment
+            </a>
+        }
+    </div>
+
+    <!-- ALERTS -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success shadow-sm">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger shadow-sm">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @if (Model.Any())
+    {
+        <div class="card shadow-lg border-0">
+
+            <!-- DARK HEADER -->
+            <div class="card-header bg-dark text-white fw-semibold">
+                Appointment List
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead style="background-color:#1f2937; color:white;">
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>@(userRole == "Doctor" ? "Patient" : "Doctor")</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var appointment in Model)
+                            {
+                                <tr>
+                                    <td>@appointment.AppointmentDate.ToString("MMM dd, yyyy")</td>
+                                    <td>@appointment.AppointmentTime.ToString("hh\\:mm")</td>
+
+                                    <td>
+                                        <strong>
+                                            @(userRole == "Doctor" ? appointment.PatientName : appointment.DoctorName)
+                                        </strong>
+                                    </td>
+
+                                    <td>@(appointment.Reason ?? "Not specified")</td>
+
+                                    <!-- STATUS -->
+                                    <td>
+                                        <span class="badge px-3 py-2 bg-@(appointment.Status.ToString().ToLower() switch {
+                                            "pending" => "warning",
+                                            "confirmed" => "success",
+                                            "completed" => "info",
+                                            "cancelled" => "danger",
+                                            _ => "secondary"
+                                        })">
+                                            @appointment.Status
+                                        </span>
+                                    </td>
+
+                                    <!-- ACTIONS -->
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+
+                                            @if (appointment.Status != AppointmentStatus.Cancelled &&
+                                           appointment.Status != AppointmentStatus.Completed)
+                                            {
+                                                @if (userRole == "Patient")
+                                                {
+                                                    <form asp-action="Cancel" asp-route-id="@appointment.Id" method="post"
+                                                          onsubmit="return confirm('Cancel appointment?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <button class="btn btn-sm btn-outline-danger">
+                                                            ❌ Cancel
+                                                        </button>
+                                                    </form>
+                                                }
+
+                                                else if (userRole == "Doctor" || userRole == "Admin")
+                                                {
+                                                    @if (appointment.Status == AppointmentStatus.Pending)
+                                                    {
+                                                        <form asp-action="UpdateStatus" asp-route-id="@appointment.Id" method="post">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="status" value="@AppointmentStatus.Confirmed" />
+                                                            <button class="btn btn-sm btn-outline-success">
+                                                                ✔ Confirm
+                                                            </button>
+                                                        </form>
+                                                    }
+
+                                                    @if (appointment.Status == AppointmentStatus.Confirmed)
+                                                    {
+                                                        <form asp-action="UpdateStatus" asp-route-id="@appointment.Id" method="post">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="status" value="@AppointmentStatus.Completed" />
+                                                            <button class="btn btn-sm btn-outline-info">
+                                                                ✔ Complete
+                                                            </button>
+                                                        </form>
+                                                    }
+                                                }
+                                            }
+
+                                            @if (appointment.HasPrescription)
+                                            {
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-file-medical"></i> Prescription
+                                                </span>
+                                            }
+
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+
+                    </table>
+
+                </div>
+            </div>
+
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-secondary shadow-sm">
+            <i class="bi bi-info-circle"></i> No appointments found.
+        </div>
+    }
+
+</div>
