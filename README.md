@@ -1,24 +1,26 @@
 # Smart Healthcare Management System
 
-A full-stack healthcare management system built using ASP.NET Core Web API and MVC architecture. The application enables efficient management of patients, doctors, and appointments with role-based access.
+A full-stack healthcare management system built using ASP.NET Core Web API and MVC architecture. The application provides a structured and scalable solution for managing patients, doctors, and appointments with secure authentication and role-based access.
 
 ---
 
 ## Overview
 
-This system provides a centralized platform for managing healthcare operations including appointment booking, user authentication, and dashboard analytics for different roles such as Admin, Doctor, and Patient.
+This system enables efficient healthcare management through a centralized platform. It supports appointment scheduling, user authentication, and administrative controls with a clean separation between API and MVC layers.
 
 ---
 
 ## Features
 
-- User authentication using JWT
-- Role-based access (Admin, Doctor, Patient)
+- User authentication using JWT (JSON Web Token)
+- Role-based access control (Admin, Doctor, Patient)
 - Appointment booking and management
 - Appointment status tracking (Pending, Confirmed, Completed, Cancelled)
 - Doctor and patient management
-- Dashboard with key statistics
+- Dashboard with statistics and insights
 - Prescription tracking
+- API documentation using Swagger
+- Object mapping using AutoMapper
 
 ---
 
@@ -28,6 +30,9 @@ This system provides a centralized platform for managing healthcare operations i
 - ASP.NET Core MVC
 - Entity Framework Core
 - SQL Server
+- AutoMapper
+- JWT Authentication
+- Swagger (OpenAPI)
 - Bootstrap
 - JavaScript and jQuery
 
@@ -35,9 +40,19 @@ This system provides a centralized platform for managing healthcare operations i
 
 ## Project Structure
 
-- SmartHealthcare.API - Backend API
-- SmartHealthcare.MVC - Frontend (MVC)
-- SmartHealthcare.Core - Models, DTOs, Interfaces
+- SmartHealthcare.API - Backend API (Controllers, Services, Authentication)
+- SmartHealthcare.MVC - Frontend UI (Views, Controllers)
+- SmartHealthcare.Core - Models, DTOs, Interfaces, Mapping Profiles
+
+---
+
+## API Features
+
+- RESTful API design
+- Secure endpoints using JWT authentication
+- Swagger UI for testing and documentation
+- Data transfer using DTOs
+- Clean architecture with service and repository pattern
 
 ---
 
